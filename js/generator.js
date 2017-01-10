@@ -30,8 +30,14 @@
             token = template[i];
             haystack = words[token];
 
-            if ( ! haystack )
-              throw new Error('Unknown token "' + token + '"');
+            if ( ! haystack ) {
+                if (options.use_more_templates) {
+                    sentence.push(token);
+                    continue;
+                } else {
+                    throw new Error('Unknown token "' + token + '"');
+                }
+            }
 
             if ( options.use_dirty )
               haystack = haystack.concat(words["dirty_" + token]);
@@ -152,6 +158,9 @@
                 template = random.choice([
                     ['adjective', 'noun', 'verb', 'adjective', 'noun'],
                     ['adjective', 'adjective', 'noun', 'verb', 'article', 'noun'],
+                    // Inspired by Pafwert:
+                    ['verb', 'article', 'adjective', 'noun', "@", 'adjective', 'noun', ".", "com"],
+                    ['article', "very", 'adjective', 'adjective', 'noun', 'verb', 'noun']
                 ])
             }
 
