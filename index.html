@@ -11,173 +11,31 @@
     <script src="js/random.js"></script>
     <script src="js/wordlist.js"></script>
     <script src="js/jquery.min.js"></script>
+    <script src="js/generator.js"></script>
     <script type="text/javascript">
       (function(exports, $) {
-        var TOTAL_EVENTS = 500
-          , events_left = TOTAL_EVENTS;
-
-        if ( random.ready() )
-          events_left = 0;
-
-        function parseOptions(options) {
-          return $.extend({
-              use_dirty: false
-            , use_number: false
-            , use_symbol: false
-            , use_spaces: true
-            }, options);
-          };
-
-        exports.sentencePassword = function(template, options) {
-          var entropy = 0
-            , sentence = []
-            , haystack
-            , token
-            , i;
-
-          options = parseOptions(options);
-
-          for ( i = 0; i < template.length; i++ ) {
-            token = template[i];
-            haystack = words[token];
-
-            if ( ! haystack )
-              throw new Error('Unknown token "' + token + '"');
-
-            if ( options.use_dirty )
-              haystack = haystack.concat(words["dirty_" + token]);
-
-            sentence.push(random.choice(haystack));
-            entropy += Math.log(haystack.length)/Math.log(2);
-          }
-
-          if ( options.use_dirty )
-          {
-            // choose a random word to replace with a dirty word
-            // note: not all parts of speech have dirty equivalents
-            do
-            {
-              i = random.random(template.length);
-              token = template[i];
-              haystack = words["dirty_" + token];
-            } while ( ! haystack
-                      || haystack.length == 0 )
-
-            sentence[i] = random.choice(haystack);
-
-            entropy += Math.log(template.length)/Math.log(2);
-            entropy -= Math.log(words[token].length)/Math.log(2);
-          }
-
-          if (!options.use_spaces) // Capitalize the letters if we don't use spaces
-          {
-            for ( i = 0; i < sentence.length; i++ ) {
-              token = sentence[i];
-              token = token.substr(0, 1).toUpperCase() + token.substr(1);
-              sentence[i] = token;
-            }
-          }
-
-          var ret = {
-            password: sentence.join(" ")
-          , entropy: entropy
-          };
-          if ( options.use_number )
-          {
-            var new_password = exports.addReplacement({
-              'a': '4',
-              'e': '3',
-              'i': '1',
-              'o': '0',
-              'q': '9',
-              's': '5',
-              't': '7',
-              'z': '2'
-              }, ret.password);
-            ret.password = new_password.password;
-            ret.entropy += new_password.entropy;
-          }
-          if ( options.use_symbol )
-          {
-            var new_password = exports.addReplacement({
-              'a': '@',
-              'b': '|3',
-              'c': '(',
-              'h': '|-|',
-              'i': '!',
-              'k': '|<',
-              'l': '|',
-              't': '+',
-              'v': '\\/',
-              's': '$',
-              'x': '%'
-              }, ret.password);
-            ret.password = new_password.password;
-            ret.entropy += new_password.entropy;
-          }
-          if ( ! options.use_spaces )
-          {
-            ret.password = ret.password.replace(/ /g, '');
-          }
-          return ret;
-        };
-
-        exports.addReplacement = function(replacements, string) {
-          var chars = string.split('')
-            , i
-            , replaceable = new RegExp('[' + Object.keys(replacements) + ']', 'g');
-
-          do {
-            i = random.random(chars.length);
-          } while ( ! chars[i].match(replaceable) )
-
-          chars[i] = replacements[chars[i]];
-          return {
-            password: chars.join('')
-          , entropy: Math.log(string.match(replaceable).length)/Math.log(2)
-          };
-        };
-
-        exports.templateEntropy = function(template, options) {
-          var entropy = 0
-            , haystack;
-
-          options = parseOptions(options);
-
-          for ( var i = 0; i < template.length; i++ ) {
-            haystack = words[template[i]];
-            if ( options.use_dirty )
-              haystack = haystack.concat(words["dirty_" + template[i]]);
-            entropy += Math.log(haystack.length)/Math.log(2);
-          }
-
-          return entropy;
-        };
-
         $(document).ready(function() {
           var more_entropy_progress_div = $('#more_entropy .progress div')
             , reminder_elem = $('#more_entropy .reminder')
             , show_reminder = function() { reminder_elem.addClass('visible'); }
-            , reminder_timeout = null
+            , reminder_timeout = null,
+              build_options = function(options_form){
+                  return {
+                      use_dirty: options_form.use_dirty.checked
+                      , use_number: options_form.use_number.checked
+                      , use_symbol: options_form.use_symbol.checked
+                      , use_spaces: options_form.use_spaces.checked
+                      , use_more_words: options_form.use_more_words.checked
+                      , use_more_templates: options_form.use_more_templates.checked
+                      , diceware: options_form.diceware.checked
+                  }
+              }
             , generate_password = function() {
-                var template = ['adjective', 'noun', 'verb', 'adjective', 'noun']
-                  , options_form = $('#options')[0];
+                  var options_form = $('#options')[0]
+                  , options = build_options(options_form),
+                      template = exports.choose_template(options);
 
-                if ( options_form.use_more_words.checked )
-                  template = ['article', 'adjective', 'noun', 'verb', 'article', 'adjective', 'noun'];
-
-                if ( options_form.diceware.checked ) {
-                  template = ['diceware', 'diceware', 'diceware', 'diceware', 'diceware'];
-                  if ( options_form.use_more_words.checked )
-                    template = template.concat(['diceware', 'diceware']);
-                }
-
-                var sentence = exports.sentencePassword(template, {
-                  use_dirty: options_form.use_dirty.checked
-                , use_number: options_form.use_number.checked
-                , use_symbol: options_form.use_symbol.checked
-                , use_spaces: options_form.use_spaces.checked
-                });
+                var sentence = exports.sentencePassword(template, options);
 
                 $('#generate .password').text(sentence.password);
 
@@ -193,7 +51,7 @@
 
           $('#generate_button').click(generate_password);
 
-          if ( events_left == 0 ) {
+          if ( random.ready() ) {
             $('#more_entropy').hide();
             $('#generate').show();
             generate_password();
@@ -217,15 +75,15 @@
             reminder_timeout = setTimeout(show_reminder, 5000);
 
             random.addEntropy(x + y + ms);
-            events_left--;
-            if (  events_left == 0 ) {
+            // Check exactly == 0, so that we don't generate passwords on every event!
+            if (  random.events_left == 0 ) {
               $('#more_entropy').hide();
               $('#generate').show();
               generate_password();
             }
-            else if ( events_left > 0 && events_left % 10 == 0 )
+            else if ( random.events_left > 0 && random.events_left % 10 == 0 )
             {
-              more_entropy_progress_div.css('width', ((TOTAL_EVENTS - events_left)/TOTAL_EVENTS * 100) + '%');
+              more_entropy_progress_div.css('width', ((random.TOTAL_EVENTS - random.events_left)/random.TOTAL_EVENTS * 100) + '%');
             }
           };
 
@@ -263,6 +121,7 @@
           <label><input type="checkbox" name="use_more_words">Include more words?</label>
           <label><input type="checkbox" name="use_spaces" checked="checked">Include spaces between words?</label>
           <label><input type="checkbox" name="diceware">Use the diceware wordlist</label>
+          <label><input type="checkbox" name="use_more_templates">Use more varied templates?</label>
         </form>
       </div>
       <div id="more_entropy">
