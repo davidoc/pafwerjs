@@ -17,6 +17,12 @@
             }, options);
           };
 
+        var generators = {
+            randomNum100: function(){
+                return random.random(99);
+            }
+        };
+
         exports.sentencePassword = function(template, options) {
           var entropy = 0
             , sentence = []
@@ -32,7 +38,12 @@
 
             if ( ! haystack ) {
                 if (options.use_more_templates) {
-                    sentence.push(token);
+                    gen = generators[token];
+                    if ( gen ) {
+                        sentence.push(gen());
+                    } else {
+                        sentence.push(token);
+                    }
                     continue;
                 } else {
                     throw new Error('Unknown token "' + token + '"');
@@ -159,7 +170,7 @@
                     ['adjective', 'noun', 'verb', 'adjective', 'noun'],
                     ['adjective', 'adjective', 'noun', 'verb', 'article', 'noun'],
                     // Inspired by Pafwert:
-                    ['verb', 'article', 'adjective', 'noun', "@", 'adjective', 'noun', ".", "com"],
+                    ['adjective', 'noun', 'randomNum100', "@", 'adjective', 'noun', ".", "com"],
                     ['article', "very", 'adjective', 'adjective', 'noun', 'verb', 'noun']
                 ])
             }
