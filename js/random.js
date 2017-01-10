@@ -7,6 +7,7 @@
   exports.RandomGen = function() {
     var buffer = ''
       , local_storage = typeof window.localStorage != 'undefined' ? localStorage : {}
+      , has_crypto_random = typeof window.crypto != 'undefined' && typeof window.crypto.getRandomValues != 'undefined'
       , TOTAL_EVENTS = 500
       , events_left = TOTAL_EVENTS
       , that = this;
@@ -38,7 +39,7 @@
         throw new Error('too many bits requested');
       }
 
-      if (window.crypto.getRandomValues !== undefined) {
+      if (has_crypto_random) {
           window.crypto.getRandomValues(output);
       } else {
           throw new Error('window.crypto.getRandomValues not available');
@@ -112,7 +113,7 @@
      * Returns true if enough entropy has been collected.
      */
     this.ready = function() {
-      return events_left <= 0;
+      return has_crypto_random || events_left <= 0;
     }
 
     /**
