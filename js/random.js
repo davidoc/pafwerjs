@@ -89,12 +89,12 @@
       else if ( max == 1 )
         return 0;
 
-      var bits = Math.ceil(Math.log(max)/Math.log(2))
-        , n;
+      var bits = Math.ceil(Math.log(max)/Math.log(2)),
+          n,
+          random_func = has_crypto_random ? random_c : random_2;
 
       do {
-        // n = random_2(bits);
-        n = random_c(bits);
+        n = random_func(bits);
       } while ( n >= max );
 
       return n;
