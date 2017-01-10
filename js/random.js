@@ -27,6 +27,28 @@
       return parseInt(hex, 16);
     }
 
+    function random_c(bits) {
+      var output
+          , max_bits = 32
+          , n;
+
+      if (bits <= max_bits) {
+        output = new Uint32Array(1);
+      } else {
+        throw new Error('too many bits requested');
+      }
+
+      if (window.crypto.getRandomValues !== undefined) {
+          window.crypto.getRandomValues(output);
+      } else {
+          throw new Error('window.crypto.getRandomValues not available');
+      }
+
+      n = output[0];
+      n = n >>> (max_bits - bits);
+      return n
+    }
+
     function updateLocalStorage() {
       if ( that.ready() ) {
         local_storage.random_seed = outputOracle(buffer);
@@ -70,7 +92,8 @@
         , n;
 
       do {
-        n = random_2(bits);
+        // n = random_2(bits);
+        n = random_c(bits);
       } while ( n >= max );
 
       return n;
