@@ -36,7 +36,7 @@
       if (bits <= max_bits) {
         output = new Uint32Array(1);
       } else {
-        throw new Error('too many bits requested');
+        throw new Error('too many bits requested ('+bits+')');
       }
 
       if (has_crypto_random) {
@@ -79,6 +79,10 @@
       return output;
     };
 
+    this.bitsOfMax = function(max) {
+      return Math.ceil(Math.log(max)/Math.log(2));
+    };
+
     /**
      * `random` returns n such that `0 <= n < max`
      * `max` must be greater than 0.
@@ -89,7 +93,7 @@
       else if ( max == 1 )
         return 0;
 
-      var bits = Math.ceil(Math.log(max)/Math.log(2)),
+      var bits = this.bitsOfMax(max),
           n,
           random_func = has_crypto_random ? random_c : random_2;
 

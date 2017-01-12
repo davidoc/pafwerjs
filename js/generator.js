@@ -19,7 +19,7 @@
 
         var generators = {
             randomNum100: function(){
-                return random.random(99);
+                return {text: random.random(99), entropy: random.bitsOfMax(99)};
             }
         };
 
@@ -27,6 +27,7 @@
           var entropy = 0
             , sentence = []
             , haystack
+            , generator, result
             , token
             , i;
 
@@ -38,9 +39,11 @@
 
             if ( ! haystack ) {
                 if (options.use_more_templates) {
-                    gen = generators[token];
-                    if ( gen ) {
-                        sentence.push(gen());
+                    generator = generators[token];
+                    if ( generator ) {
+                       result = generator();
+                        sentence.push(result.text);
+                        entropy += result.entropy;
                     } else {
                         sentence.push(token);
                     }
@@ -161,27 +164,21 @@
         };
 
         exports.choose_template = function(options) {
-            var template = ['adjective', 'noun', 'verb', 'adjective', 'noun'];
+            var template = templates.default;
 
             options = parseOptions(options);
 
             if (options.use_more_templates) {
-                template = random.choice([
-                    ['adjective', 'noun', 'verb', 'adjective', 'noun'],
-                    ['adjective', 'adjective', 'noun', 'verb', 'article', 'noun'],
-                    // Inspired by Pafwert:
-                    ['adjective', 'noun', 'randomNum100', "@", 'adjective', 'noun', ".", "com"],
-                    ['article', "very", 'adjective', 'adjective', 'noun', 'verb', 'noun']
-                ])
+                template = random.choice(Object.values(templates));
             }
 
-            if ( options.use_more_words )
-                template = ['article', 'adjective', 'noun', 'verb', 'article', 'adjective', 'noun'];
+            if ( options.use_more_words && templates.more_words)
+                template = templates.more_words;
 
-            if ( options.diceware ) {
-                template = ['diceware', 'diceware', 'diceware', 'diceware', 'diceware'];
-                if ( options.use_more_words )
-                    template = template.concat(['diceware', 'diceware']);
+            if ( options.diceware && templates.diceware) {
+                template = templates.diceware;
+                if ( options.use_more_words && templates.diceware_more_words)
+                    template = templates.diceware_more_words;
             }
 
             return template
